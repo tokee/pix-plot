@@ -310,7 +310,8 @@ class PixPlot:
     file_count = len(self.vector_files)
     return {
       '32px': ceil( file_count / (64**2) ),
-      '64px': ceil( file_count / (32**2) )
+      '64px': ceil( file_count / (32**2) ),
+      '128px': ceil( file_count / (16**2) )
     }
 
 

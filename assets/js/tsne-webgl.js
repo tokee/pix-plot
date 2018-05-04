@@ -24,14 +24,14 @@ var sizes = {
 }
 
 // Count of 32px and 64px atlas files to fetch
-var atlasCounts = { '32px': null, '64px': null }
+var atlasCounts = { '32px': null, '128px': null }
 
 // Create a store for the load progress. Data structure:
 // {atlas0: percentLoaded, atlas1: percentLoaded}
 var loadProgress = {};
 
 // Create a store for the 32px and 64px atlas materials
-var materials = { 32: [], 64: [] }
+var materials = { 32: [], 128: [] }
 
 // Many graphics cards only support 2**16 vertices per mesh,
 // and each image requires 4 distinct vertices
@@ -615,17 +615,17 @@ function buildMesh(geometry, materials) {
 
 function loadLargeAtlasFiles() {
   sizes.image = {
-    width: 64,
-    height: 64
+    width: 128,
+    height: 128
   }
   sizes.atlas = {
     width: 2048,
     height: 2048,
-    cols: 2048 / 64,
-    rows: 2048 / 64
+    cols: 2048 / 128,
+    rows: 2048 / 128
   }
-  for (var i=0; i<atlasCounts['64px']; i++) {
-    var url = dataUrl + 'atlas_files/64px/atlas-' + i + '.jpg';
+  for (var i=0; i<atlasCounts['128px']; i++) {
+    var url = dataUrl + 'atlas_files/128px/atlas-' + i + '.jpg';
     textureLoader.load(url, handleLargeTexture.bind(null, i))
   }
 }
@@ -641,7 +641,7 @@ function loadLargeAtlasFiles() {
 
 function handleLargeTexture(atlasIndex, texture) {
   var material = new THREE.MeshBasicMaterial({ map: texture });
-  materials['64'][atlasIndex] = material;
+  materials['128'][atlasIndex] = material;
   updateImages(atlasIndex)
 }
 
@@ -663,7 +663,7 @@ function updateImages(atlasIndex) {
   // Identify the index position for the new atlas file
   var materialIndex = meshes[meshIndex].material.length;
   // Add the new atlas to its mesh
-  meshes[meshIndex].material.push( materials['64'][atlasIndex] )
+  meshes[meshIndex].material.push( materials['128'][atlasIndex] )
   // Request an update for this material
   meshes[meshIndex].material[materialIndex].needsUpdate = true;
   // Grab the geometry to which we added the new atlas

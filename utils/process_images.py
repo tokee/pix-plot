@@ -321,7 +321,7 @@ class PixPlot:
     '''
     print(' * Creating atlas files')
     atlas_group_imgs = []
-    for thumb_size in self.sizes[1:-1]:
+    for thumb_size in self.sizes:
       # identify the images for this atlas group
       atlas_thumbs = self.get_atlas_thumbs(thumb_size)
       atlas_group_imgs.append(len(atlas_thumbs))

@@ -463,6 +463,24 @@ function buildGeometry() {
     var meshImages = imageDataKeys.slice(i*imagesPerMesh, (i+1)*imagesPerMesh);
     for (var j=0; j<meshImages.length; j++) {
       var datum = imageData[ meshImages[j] ];
+
+        // ###
+        //        var spriteMap = new THREE.TextureLoader().load( dataUrl + "thumbs/Toke.jpg" );
+        var imageKey = imageDataKeys[datum.idx].replace('"', '');
+        var imageFile = dataUrl + "thumbs/128px/" + imageKey + ".jpg";
+        var spriteMap = new THREE.TextureLoader().load( imageFile );
+        var spriteMaterial = new THREE.SpriteMaterial( { map: spriteMap, color: 0xffffff } );
+        var sprite = new THREE.Sprite( spriteMaterial );
+        
+        sprite.scale.set(datum.width*4, datum.height*4, 1)
+        sprite.position.x = datum.pos.x;
+        sprite.position.y = datum.pos.y;
+        sprite.position.z = datum.pos.z + 10;
+        scene.add( sprite );
+        
+        console.log(JSON.stringify(datum));
+//        console.log(JSON.stringify(imageDataKeys[datum.idx]));
+        
       geometry = updateVertices(geometry, datum);
       geometry = updateFaces(geometry);
       geometry = updateFaceVertexUvs(geometry, datum);
@@ -643,6 +661,7 @@ function handleLargeTexture(atlasIndex, texture) {
   var material = new THREE.MeshBasicMaterial({ map: texture });
   materials['64'][atlasIndex] = material;
   updateImages(atlasIndex)
+  // TODO: Consider setting materials['64'][atlasIndex] to null as it is never used anymore
 }
 
 /**
@@ -818,6 +837,7 @@ function onMouseup(event) {
   var meshIndex = selected.object.userData.meshIndex;
   // rows * cols images per mesh, 2 faces per image
   var imageIndex = (meshIndex * imagesPerMesh) + Math.floor(faceIndex / 2);
+    console.log("faceIndex=" + faceIndex + ", meshIndex=" + meshIndex + ", imageIndex=" + imageIndex + ", selected=" + JSON.stringify(selected));
   // Store the image name in the url hash for reference
   window.location.hash = imageDataKeys[imageIndex];
   flyTo(
@@ -825,6 +845,29 @@ function onMouseup(event) {
     selected.point.y,
     selected.point.z
   );
+
+    // ¤¤¤
+//    console.log("Mouse: " + mouse.x + ", " + mouse.y + ", selected=" + JSON.stringify(selected));
+    // TODO: Remove experiments
+    // https://threejs.org/docs/#api/en/objects/Sprite
+    var imageDataKey = imageDataKeys[imageIndex].replace('"', '');
+    console.log("Extracting index " + imageIndex + " from imageDataKeys " + JSON.stringify(imageDataKeys));
+    var img = dataUrl + "thumbs/128px/" + imageDataKey + ".jpg";
+    var selectedData = imageData[imageDataKey];
+    console.log(JSON.stringify(selectedData));
+    
+    var spriteMap = new THREE.TextureLoader().load( img );
+//    var spriteMap = new THREE.TextureLoader().load( dataUrl + "full/" + "selected.Toke.jpg" );
+    var spriteMaterial = new THREE.SpriteMaterial( { map: spriteMap, color: 0xffffff } );
+    var sprite = new THREE.Sprite( spriteMaterial );
+
+    sprite.scale.set(180, 411, 1)
+    sprite.position.x = selected.point.x;
+    sprite.position.y = selected.point.y;
+    sprite.position.z = selected.point.z + 100;
+    scene.add( sprite );
+    console.log("Mouse: " + mouse.x + ", " + mouse.y + ", added sprite " + JSON.stringify(sprite));
+
 }
 
 /**

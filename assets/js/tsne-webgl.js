@@ -471,7 +471,8 @@ function buildGeometry() {
         var spriteMap = new THREE.TextureLoader().load( imageFile );
         var spriteMaterial = new THREE.SpriteMaterial( { map: spriteMap, color: 0xffffff } );
         var sprite = new THREE.Sprite( spriteMaterial );
-        
+
+        sprite.name = imageKey;
         sprite.scale.set(datum.width*4, datum.height*4, 1)
         sprite.position.x = datum.pos.x;
         sprite.position.y = datum.pos.y;
@@ -837,7 +838,7 @@ function onMouseup(event) {
   var meshIndex = selected.object.userData.meshIndex;
   // rows * cols images per mesh, 2 faces per image
   var imageIndex = (meshIndex * imagesPerMesh) + Math.floor(faceIndex / 2);
-    console.log("faceIndex=" + faceIndex + ", meshIndex=" + meshIndex + ", imageIndex=" + imageIndex + ", selected=" + JSON.stringify(selected));
+//    console.log("imageKey=" + selected.object.name + ", faceIndex=" + faceIndex + ", meshIndex=" + meshIndex + ", imageIndex=" + imageIndex + ", selected=" + JSON.stringify(selected));
   // Store the image name in the url hash for reference
   window.location.hash = imageDataKeys[imageIndex];
   flyTo(
@@ -850,8 +851,8 @@ function onMouseup(event) {
 //    console.log("Mouse: " + mouse.x + ", " + mouse.y + ", selected=" + JSON.stringify(selected));
     // TODO: Remove experiments
     // https://threejs.org/docs/#api/en/objects/Sprite
-    var imageDataKey = imageDataKeys[imageIndex].replace('"', '');
-    console.log("Extracting index " + imageIndex + " from imageDataKeys " + JSON.stringify(imageDataKeys));
+    var imageDataKey = selected.object.name;
+//    console.log("Extracting index " + imageIndex + " from imageDataKeys " + JSON.stringify(imageDataKeys));
     var img = dataUrl + "thumbs/128px/" + imageDataKey + ".jpg";
     var selectedData = imageData[imageDataKey];
     console.log(JSON.stringify(selectedData));
@@ -861,12 +862,12 @@ function onMouseup(event) {
     var spriteMaterial = new THREE.SpriteMaterial( { map: spriteMap, color: 0xffffff } );
     var sprite = new THREE.Sprite( spriteMaterial );
 
-    sprite.scale.set(180, 411, 1)
+    sprite.scale.set(selected.width**16, selected.height*16, 1)
     sprite.position.x = selected.point.x;
     sprite.position.y = selected.point.y;
     sprite.position.z = selected.point.z + 100;
     scene.add( sprite );
-    console.log("Mouse: " + mouse.x + ", " + mouse.y + ", added sprite " + JSON.stringify(sprite));
+  //  console.log("Mouse: " + mouse.x + ", " + mouse.y + ", added sprite " + JSON.stringify(sprite));
 
 }
 

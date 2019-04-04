@@ -82,7 +82,7 @@ function getScene() {
 
 function getCamera() {
   var aspectRatio = window.innerWidth / window.innerHeight;
-  var camera = new THREE.PerspectiveCamera(75, aspectRatio, 100, 50000);
+  var camera = new THREE.PerspectiveCamera(75, aspectRatio, 50, 50000);
   camera.position.set(0, -1000, 12000);
   return camera;
 }
@@ -126,9 +126,16 @@ function getRenderer() {
 
 function getControls(camera, renderer) {
   var controls = new THREE.TrackballControls(camera, renderer.domElement);
-  controls.zoomSpeed = 0.4;
-  controls.panSpeed = 0.4;
+  controls.zoomSpeed = 0.6;
+  controls.panSpeed = 0.6;
+  // https://github.com/mrdoob/three.js/blob/master/examples/js/controls/TrackballControls.js  
+  controls.addEventListener('change', viewChanged, false);
+  
   return controls;
+}
+function viewChanged(event) {
+    // TODO: Enhance images in view based on proximity (remember to de-enhance previously enhanced images)
+    //console.log(JSON.stringify(event));
 }
 
 /**
@@ -476,7 +483,7 @@ function buildGeometry() {
         sprite.scale.set(datum.width*4, datum.height*4, 1)
         sprite.position.x = datum.pos.x;
         sprite.position.y = datum.pos.y;
-        sprite.position.z = datum.pos.z + 10;
+        sprite.position.z = datum.pos.z;
         scene.add( sprite );
         
         console.log(JSON.stringify(datum));
@@ -488,11 +495,11 @@ function buildGeometry() {
     }
     var startMaterial = imageData[ meshImages[0] ].atlas.index;
     var endMaterial = imageData[ meshImages[j-1] ].atlas.index;
-    buildMesh(geometry, materials['32'].slice(startMaterial, endMaterial + 1));
+//    buildMesh(geometry, materials['32'].slice(startMaterial, endMaterial + 1));
   }
   requestAnimationFrame(animate);
   removeLoaderScene();
-  loadLargeAtlasFiles();
+//  loadLargeAtlasFiles();
 }
 
 /**
@@ -853,21 +860,22 @@ function onMouseup(event) {
     // https://threejs.org/docs/#api/en/objects/Sprite
     var imageDataKey = selected.object.name;
 //    console.log("Extracting index " + imageIndex + " from imageDataKeys " + JSON.stringify(imageDataKeys));
-    var img = dataUrl + "thumbs/128px/" + imageDataKey + ".jpg";
+    var img = dataUrl + "1200/" + imageDataKey + ".jpg";
     var selectedData = imageData[imageDataKey];
-    console.log(JSON.stringify(selectedData));
+//    console.log(JSON.stringify(selectedData));
+    console.log(JSON.stringify(selected));
     
     var spriteMap = new THREE.TextureLoader().load( img );
 //    var spriteMap = new THREE.TextureLoader().load( dataUrl + "full/" + "selected.Toke.jpg" );
     var spriteMaterial = new THREE.SpriteMaterial( { map: spriteMap, color: 0xffffff } );
     var sprite = new THREE.Sprite( spriteMaterial );
 
-    sprite.scale.set(selected.width**16, selected.height*16, 1)
-    sprite.position.x = selected.point.x;
-    sprite.position.y = selected.point.y;
-    sprite.position.z = selected.point.z + 100;
+    sprite.scale.set(selectedData.width*4, selectedData.height*4, 1)
+    sprite.position.x = selectedData.pos.x;
+    sprite.position.y = selectedData.pos.y;
+    sprite.position.z = selectedData.pos.z + 1;
     scene.add( sprite );
-  //  console.log("Mouse: " + mouse.x + ", " + mouse.y + ", added sprite " + JSON.stringify(sprite));
+//    console.log("Mouse: " + mouse.x + ", " + mouse.y + ", added sprite " + JSON.stringify(sprite));
 
 }
 

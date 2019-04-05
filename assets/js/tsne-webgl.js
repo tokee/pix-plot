@@ -2,6 +2,9 @@
 * Globals
 **/
 
+// TODO: Transparent PNGs as atlas
+// TODO: How to avoid rounding errors with offset? 1-pixel padding?
+
 // Initialize global data stores for image data
 var imageData = {};
 var imageDataKeys = [];
@@ -396,7 +399,7 @@ function getImageMeshData(idx) {
 function loadAtlasFiles() {
   for (var i=0; i<atlasCounts['32px']; i++) {
     var url = dataUrl + 'atlas_files/32px/atlas-' + i + '.jpg';
-    url = dataUrl + 'atlas_files/32px/atlas-' + i + '-rainbow.png';
+    url = dataUrl + 'atlas_files/32px/atlas-' + i + '.jpg';
     textureLoader.load(url, handleTexture.bind(null, i),
       onProgress.bind(null, i))
   }
@@ -505,7 +508,8 @@ function buildGeometry() {
         var sprite = new THREE.Sprite( spriteMaterial );
 
         sprite.name = imageKey;
-        sprite.scale.set(datum.width*4, datum.height*4, 1)
+        sprite.scale.set(32*4, 32*4, 1)
+//        sprite.scale.set(datum.width*4, datum.height*4, 1)
         sprite.position.x = datum.pos.x;
         sprite.position.y = datum.pos.y;
         sprite.position.z = datum.pos.z;

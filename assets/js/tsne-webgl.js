@@ -33,6 +33,9 @@ var loadProgress = {};
 // Create a store for the 32px and 64px atlas materials
 var materials = { 32: [], 64: [] }
 
+// Store the raw textures
+var textures = {};
+
 // Many graphics cards only support 2**16 vertices per mesh,
 // and each image requires 4 distinct vertices
 var imagesPerMesh = 2**14;
@@ -393,6 +396,7 @@ function getImageMeshData(idx) {
 function loadAtlasFiles() {
   for (var i=0; i<atlasCounts['32px']; i++) {
     var url = dataUrl + 'atlas_files/32px/atlas-' + i + '.jpg';
+    url = dataUrl + 'atlas_files/32px/atlas-' + i + '-rainbow.png';
     textureLoader.load(url, handleTexture.bind(null, i),
       onProgress.bind(null, i))
   }
@@ -429,6 +433,7 @@ function onProgress(atlasIndex, xhr) {
 **/
 
 function handleTexture(textureIndex, texture) {
+    textures[textureIndex] = texture;
   var material = new THREE.MeshBasicMaterial({ map: texture });
   materials['32'][textureIndex] = material;
   startIfReady();
@@ -464,18 +469,38 @@ function startIfReady() {
 **/
 
 function buildGeometry() {
+  var tileSide = Math.floor(2048/32);
   var meshCount = Math.ceil( imageDataKeys.length / imagesPerMesh );
   for (var i=0; i<meshCount; i++) {
+    // https://www.script-tutorials.com/webgl-with-three-js-lesson-8/
+    var baseSpriteMap = textures[i];
+      //new THREE.TextureLoader().load( dataUrl + "atlas_files/32px/atlas-" + i + "-rainbow.png" );
+//    var baseSpriteMap = new THREE.TextureLoader().load( dataUrl + "atlas_files/32px/atlas-" + i + ".jpg" );
+    baseSpriteMap.wrapS = baseSpriteMap.wrapT = THREE.RepeatWrapping
+//    baseSpriteMap.repeat.set(1 / tileSide, 1 / tileSide);  
+    baseSpriteMap.repeat.set(1 / tileSide, 1 / tileSide);  
+
     var geometry = new THREE.Geometry();
     var meshImages = imageDataKeys.slice(i*imagesPerMesh, (i+1)*imagesPerMesh);
     for (var j=0; j<meshImages.length; j++) {
       var datum = imageData[ meshImages[j] ];
-
+        
         // ###
         //        var spriteMap = new THREE.TextureLoader().load( dataUrl + "thumbs/Toke.jpg" );
         var imageKey = imageDataKeys[datum.idx].replace('"', '');
         var imageFile = dataUrl + "thumbs/128px/" + imageKey + ".jpg";
-        var spriteMap = new THREE.TextureLoader().load( imageFile );
+//        var spriteMap = new THREE.TextureLoader().load( imageFile );
+
+        var column = j % tileSide;
+        var row = Math.floor(j / tileSide);
+        var spriteMap = baseSpriteMap.clone(); // Shallow clone so the texture bitmap is shared
+        spriteMap.offset.x = column / tileSide;
+        spriteMap.offset.y = 1-((row+1)/tileSide) ; // row / tileSide);
+        spriteMap.needsUpdate = true;
+        console.log("column=" + column + ", row=" + row + ", tileSide=" + tileSide + ", offset.x=" + spriteMap.offset.x + ", offset.y=" + spriteMap.offset.y + ", repeat=" + (1/tileSide));
+        
+        //spriteMap = new THREE.TextureLoader().load( imageFile );
+//        var spriteMaterial = new THREE.SpriteMaterial( { map: baseSpriteMap, color: 0xffffff } );
         var spriteMaterial = new THREE.SpriteMaterial( { map: spriteMap, color: 0xffffff } );
         var sprite = new THREE.Sprite( spriteMaterial );
 
@@ -486,7 +511,7 @@ function buildGeometry() {
         sprite.position.z = datum.pos.z;
         scene.add( sprite );
         
-        console.log(JSON.stringify(datum));
+        //console.log(JSON.stringify(datum));
 //        console.log(JSON.stringify(imageDataKeys[datum.idx]));
         
       geometry = updateVertices(geometry, datum);
@@ -853,7 +878,7 @@ function onMouseup(event) {
     selected.point.y,
     selected.point.z
   );
-
+// https://www.script-tutorials.com/webgl-with-three-js-lesson-8/
     // ¤¤¤
 //    console.log("Mouse: " + mouse.x + ", " + mouse.y + ", selected=" + JSON.stringify(selected));
     // TODO: Remove experiments

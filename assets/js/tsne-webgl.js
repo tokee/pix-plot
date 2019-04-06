@@ -436,10 +436,10 @@ function onProgress(atlasIndex, xhr) {
 **/
 
 function handleTexture(textureIndex, texture) {
-    textures[textureIndex] = texture;
-  var material = new THREE.MeshBasicMaterial({ map: texture });
-  materials['32'][textureIndex] = material;
-  startIfReady();
+  textures[textureIndex] = texture;
+//  var material = new THREE.MeshBasicMaterial({ map: texture });
+//  materials['32'][textureIndex] = material;
+  startIfTexturesReady();
 }
 
 /**
@@ -450,6 +450,22 @@ function startIfReady() {
   var atlasCount = atlasCounts['32px'];
   var loadedAtlasCount = Object.keys(materials['32']).length;
   if (loadedAtlasCount === atlasCount &&
+      Object.keys(imageData).length > 0 &&
+      progress === 1) {
+    // Use setTimeout to wait for the next available loop
+    var button = document.querySelector('#enter');
+    button.style.opacity = 1;
+    button.addEventListener('click', function() {
+      removeLoader()
+      setTimeout(buildGeometry, 1100)
+    })
+  }
+}
+
+function startIfTexturesReady() {
+  var textureCount = atlasCounts['32px'];
+  var loadedTextureCount = Object.keys(textures).length;
+  if (loadedTextureCount === textureCount &&
       Object.keys(imageData).length > 0 &&
       progress === 1) {
     // Use setTimeout to wait for the next available loop
@@ -483,7 +499,7 @@ function buildGeometry() {
 //    baseSpriteMap.repeat.set(1 / tileSide, 1 / tileSide);  
     baseSpriteMap.repeat.set(1 / tileSide, 1 / tileSide);  
 
-    var geometry = new THREE.Geometry();
+    //var geometry = new THREE.Geometry();
     var meshImages = imageDataKeys.slice(i*imagesPerMesh, (i+1)*imagesPerMesh);
     for (var j=0; j<meshImages.length; j++) {
       var datum = imageData[ meshImages[j] ];
@@ -500,7 +516,7 @@ function buildGeometry() {
         spriteMap.offset.x = column / tileSide;
         spriteMap.offset.y = 1-((row+1)/tileSide) ; // row / tileSide);
         spriteMap.needsUpdate = true;
-        console.log("column=" + column + ", row=" + row + ", tileSide=" + tileSide + ", offset.x=" + spriteMap.offset.x + ", offset.y=" + spriteMap.offset.y + ", repeat=" + (1/tileSide));
+//        console.log("column=" + column + ", row=" + row + ", tileSide=" + tileSide + ", offset.x=" + spriteMap.offset.x + ", offset.y=" + spriteMap.offset.y + ", repeat=" + (1/tileSide));
         
         //spriteMap = new THREE.TextureLoader().load( imageFile );
 //        var spriteMaterial = new THREE.SpriteMaterial( { map: baseSpriteMap, color: 0xffffff } );
@@ -518,12 +534,12 @@ function buildGeometry() {
         //console.log(JSON.stringify(datum));
 //        console.log(JSON.stringify(imageDataKeys[datum.idx]));
         
-      geometry = updateVertices(geometry, datum);
-      geometry = updateFaces(geometry);
-      geometry = updateFaceVertexUvs(geometry, datum);
+//      geometry = updateVertices(geometry, datum);
+//      geometry = updateFaces(geometry);
+//      geometry = updateFaceVertexUvs(geometry, datum);
     }
-    var startMaterial = imageData[ meshImages[0] ].atlas.index;
-    var endMaterial = imageData[ meshImages[j-1] ].atlas.index;
+//    var startMaterial = imageData[ meshImages[0] ].atlas.index;
+//    var endMaterial = imageData[ meshImages[j-1] ].atlas.index;
 //    buildMesh(geometry, materials['32'].slice(startMaterial, endMaterial + 1));
   }
   requestAnimationFrame(animate);
@@ -927,12 +943,13 @@ function flyTo(x, y, z) {
   dummyControls.target.set(x, y, z);
   dummyControls.update();
   // Animate between the start and end quaternions
+
   new TWEEN.Tween(camera.position)
     .to(target, 1000)
     .onUpdate(function(timestamp) {
       // Slerp the camera quaternion for smooth transition.
       // `timestamp` is the eased time value from the tween.
-      THREE.Quaternion.slerp(startQuaternion, dummyCamera.quaternion, camera.quaternion, timestamp);
+        THREE.Quaternion.slerp(startQuaternion, dummyCamera.quaternion, camera.quaternion, timestamp);
     })
     .onComplete(function() {
       controls.target = new THREE.Vector3(x, y, z);
@@ -991,10 +1008,18 @@ function addWindowEventListeners() {
 /**
 * Create the animation loop that re-renders the scene each frame
 **/
-
+var lastCameraPosition = { };
 function animate() {
   requestAnimationFrame(animate);
   TWEEN.update();
+    if (lastCameraPosition.x == camera.position.x && lastCameraPosition.y == camera.position.y && lastCameraPosition.z == camera.position.z) {
+        console.log("Camera not moved");
+    } else {
+        console.log("Camera moved");
+        lastCameraPosition.x = camera.position.x;
+        lastCameraPosition.y = camera.position.y;
+        lastCameraPosition.z = camera.position.z;
+    }
   raycaster.setFromCamera(mouse, camera);
   renderer.render(scene, camera);
   controls.update();

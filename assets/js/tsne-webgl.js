@@ -932,7 +932,7 @@ function onMousedown(event) {
 var enhancedQueue = [];
 var maxEnhanced = 2;
 function onMouseup(event) {
-  // Ensure everything's updated as we no longer busy-rendre
+  // Ensure everything's updated as we no longer busy-render
   raycaster.setFromCamera(mouse, camera);
 
   // Determine which image is selected (if any)
@@ -982,12 +982,25 @@ function onMouseup(event) {
     sprite.position.z = selectedData.pos.z + 1;
     scene.add( sprite );
     if ( enhancedQueue.length >= maxEnhanced ) {
-        console.log("Removing");
         scene.remove( enhancedQueue.shift() );
     }
     enhancedQueue.push( sprite );
 //    console.log("Mouse: " + mouse.x + ", " + mouse.y + ", added sprite " + JSON.stringify(sprite));
 
+}
+
+var enhanceProjector = new THREE.Projector();
+/**
+* Called once when the camera changes from moving to still
+**/
+function enhance() {
+    // %%%
+//    console.log("Enhance called");
+//    raycaster.setFromCamera(mouse, camera);
+//    var intersects = raycaster.intersectObjects( scene.children );
+//    for ( var i = 0 ; i < intersects.length ; i++ ) {
+//        console.log("Got " + JSON.stringify(intersects[ i ].object));
+//    }
 }
 
 
@@ -1078,6 +1091,7 @@ function addWindowEventListeners() {
 * Create the animation loop that re-renders the scene each frame
 **/
 
+var cameraState = 'moving'; // moving / still
 var lastCameraPosition = { };
 function animate() {
   requestAnimationFrame(animate);
@@ -1088,6 +1102,10 @@ function animate() {
         Math.abs(lastCameraPosition.z - camera.position.z) < 0.1) {
 //        console.log("Camera not moved");
         controls.update();
+        if ( cameraState != 'still' ) {
+            enhance();
+        }
+        cameraState = 'still';
         return;
     } else {
 //        console.log("Camera moved. Last=" + lastCameraPosition.x + ", " + lastCameraPosition.y + ", " + lastCameraPosition.z + " Current=" + camera.position.x + ", " + camera.position.y + ", " + camera.position.z);
@@ -1095,6 +1113,7 @@ function animate() {
         lastCameraPosition.y = camera.position.y;
         lastCameraPosition.z = camera.position.z;
     }
+  cameraState = 'moving';
   raycaster.setFromCamera(mouse, camera);
   renderer.render(scene, camera);
   controls.update();

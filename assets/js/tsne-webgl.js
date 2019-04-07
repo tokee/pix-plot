@@ -139,7 +139,9 @@ function getControls(camera, renderer) {
   
   return controls;
 }
+
 function viewChanged(event) {
+//    console.log("View changed");
     // TODO: Enhance images in view based on proximity (remember to de-enhance previously enhanced images)
     //console.log(JSON.stringify(event));
 }
@@ -309,7 +311,7 @@ function getImagePositionData(img, idx) {
   return {
     x: img.x * 15,
     y: img.y * 12,
-    z: 2000 + (idx/100),
+    z: 2200 + (idx % 5000),
   }
 }
 
@@ -488,6 +490,7 @@ function startIfTexturesReady() {
 **/
 
 function buildGeometry() {
+  var spriteCount = 0;
   var tileSide = Math.floor(2048/32);
   var meshCount = Math.ceil( imageDataKeys.length / imagesPerMesh );
   for (var i=0; i<meshCount; i++) {
@@ -502,6 +505,9 @@ function buildGeometry() {
     //var geometry = new THREE.Geometry();
     var meshImages = imageDataKeys.slice(i*imagesPerMesh, (i+1)*imagesPerMesh);
     for (var j=0; j<meshImages.length; j++) {
+//        if ( spriteCount >= 10000 )  {
+//            break;
+//        }
       var datum = imageData[ meshImages[j] ];
         
         // ###
@@ -516,6 +522,8 @@ function buildGeometry() {
         spriteMap.offset.x = column / tileSide;
         spriteMap.offset.y = 1-((row+1)/tileSide) ; // row / tileSide);
         spriteMap.needsUpdate = true;
+        spriteMap.uuid = baseSpriteMap.uuid; // Needed to avoid texture duplication
+        //console.log(JSON.stringify(spriteMap));
 //        console.log("column=" + column + ", row=" + row + ", tileSide=" + tileSide + ", offset.x=" + spriteMap.offset.x + ", offset.y=" + spriteMap.offset.y + ", repeat=" + (1/tileSide));
         
         //spriteMap = new THREE.TextureLoader().load( imageFile );
@@ -530,7 +538,8 @@ function buildGeometry() {
         sprite.position.y = datum.pos.y;
         sprite.position.z = datum.pos.z;
         scene.add( sprite );
-        
+        spriteCount++;
+        //console.log("Added sprite #" + spriteCount + ": " + imageKey);
         //console.log(JSON.stringify(datum));
 //        console.log(JSON.stringify(imageDataKeys[datum.idx]));
         
@@ -542,8 +551,8 @@ function buildGeometry() {
 //    var endMaterial = imageData[ meshImages[j-1] ].atlas.index;
 //    buildMesh(geometry, materials['32'].slice(startMaterial, endMaterial + 1));
   }
-  requestAnimationFrame(animate);
-  removeLoaderScene();
+    requestAnimationFrame(animate);
+    removeLoaderScene();
 //  loadLargeAtlasFiles();
 }
 
@@ -805,7 +814,7 @@ function removeLoader() {
 
   // Fly to location if one is specified
   var hash = window.location.href.split('/#')[1];
-  if (hash) {
+  if (hash && hash != "undefined") {
     var coords = imageData[hash].pos;
     flyTo(coords.x, coords.y, coords.z);
   }
@@ -999,23 +1008,31 @@ function addWindowEventListeners() {
     controls.handleResize();
   });
   window.addEventListener('hashchange', function(e) {
-    var hash = e.newURL.split('/#')[1];
-    var coords = imageData[hash].pos;
-    flyTo(coords.x, coords.y, coords.z);
+      var hash = e.newURL.split('/#')[1];
+      if ( hash && hash != "undefined") {  
+        var coords = imageData[hash].pos;
+        flyTo(coords.x, coords.y, coords.z);
+      }  
   })
 }
 
 /**
 * Create the animation loop that re-renders the scene each frame
 **/
+
 var lastCameraPosition = { };
 function animate() {
   requestAnimationFrame(animate);
   TWEEN.update();
-    if (lastCameraPosition.x == camera.position.x && lastCameraPosition.y == camera.position.y && lastCameraPosition.z == camera.position.z) {
-        console.log("Camera not moved");
+  // TODO: Clicking an image should trigger a render
+    if (Math.abs(lastCameraPosition.x - camera.position.x) < 0.1 &&
+        Math.abs(lastCameraPosition.y - camera.position.y) < 0.1 &&
+        Math.abs(lastCameraPosition.z - camera.position.z) < 0.1) {
+//        console.log("Camera not moved");
+        controls.update();
+        return;
     } else {
-        console.log("Camera moved");
+//        console.log("Camera moved. Last=" + lastCameraPosition.x + ", " + lastCameraPosition.y + ", " + lastCameraPosition.z + " Current=" + camera.position.x + ", " + camera.position.y + ", " + camera.position.z);
         lastCameraPosition.x = camera.position.x;
         lastCameraPosition.y = camera.position.y;
         lastCameraPosition.z = camera.position.z;

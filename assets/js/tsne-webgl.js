@@ -65,6 +65,9 @@ var progress = 0;
 // Texture loader for XHR requests
 var textureLoader = new AjaxTextureLoader();
 
+// Whether the camera is moving or not
+var cameraState = 'moving'; // moving / still
+
 /**
 * Generate  scene object with a background color
 **/
@@ -405,7 +408,7 @@ function loadAtlasFiles() {
     url = dataUrl + 'atlas_files/32px/atlas-' + i + '.jpg';
     textureLoader.load(url, handleTexture.bind(null, i),
       onProgress.bind(null, i))
-  }
+ }
 }
 
 /**
@@ -908,8 +911,11 @@ function addCanvasEventListeners() {
 **/
 
 function onMousemove(event) {
-  mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
-  mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+    mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+    mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+    if ( cameraState == 'still' ) {
+        enhance;
+    }
 }
 
 /**
@@ -929,6 +935,7 @@ function onMousedown(event) {
 * @param {Event} event - triggered on canvas mouseup
 **/
 
+var enhancedKeys = [];
 var enhancedQueue = [];
 var maxEnhanced = 2;
 function onMouseup(event) {
@@ -950,6 +957,9 @@ function onMouseup(event) {
   // rows * cols images per mesh, 2 faces per image
     //  var imageIndex = (meshIndex * imagesPerMesh) + Math.floor(faceIndex / 2);
 
+    if ( !selected.object.userData.datum ) { // Skip already enhanced
+        return;
+    }
     var imageIndex = selected.object.userData.datum.idx;
 //    console.log("imageKey=" + selected.object.name + ", faceIndex=" + faceIndex + ", meshIndex=" + meshIndex + ", imageIndex=" + imageIndex + ", selected=" + JSON.stringify(selected));
   // Store the image name in the url hash for reference
@@ -960,19 +970,49 @@ function onMouseup(event) {
     selected.point.y,
     selected.point.z
   );
-// https://www.script-tutorials.com/webgl-with-three-js-lesson-8/
-    // ¤¤¤
-//    console.log("Mouse: " + mouse.x + ", " + mouse.y + ", selected=" + JSON.stringify(selected));
-    // TODO: Remove experiments
-    // https://threejs.org/docs/#api/en/objects/Sprite
-//    console.log("Extracting index " + imageIndex + " from imageDataKeys " + JSON.stringify(imageDataKeys));
+  enhanceImage(imageDataKey);
+}
+
+function oldenhanceImage( imageDataKey ) {
+    // %%%
     var img = dataUrl + "1200/" + imageDataKey + ".jpg";
-    var selectedData = imageData[imageDataKey];
-//    console.log(JSON.stringify(selectedData));
+    //    console.log(JSON.stringify(selectedData));
 //    console.log(JSON.stringify(selected));
     
+    var selectedData = imageData[imageDataKey];
+
     var spriteMap = new THREE.TextureLoader().load( img );
 //    var spriteMap = new THREE.TextureLoader().load( dataUrl + "full/" + "selected.Toke.jpg" );
+    var spriteMaterial = new THREE.SpriteMaterial( { map: spriteMap, color: 0xffffff } );
+    var sprite = new THREE.Sprite( spriteMaterial );
+
+    sprite.scale.set(selectedData.width*4, selectedData.height*4, 1)
+    sprite.position.x = selectedData.pos.x;
+    sprite.position.y = selectedData.pos.y;
+    sprite.position.z = selectedData.pos.z + 1;
+    // TODO: Add datum
+    scene.add( sprite );
+    if ( enhancedQueue.length >= maxEnhanced ) {
+        scene.remove( enhancedQueue.shift() );
+    }
+    enhancedQueue.push( sprite );
+}
+
+// TODO: Pending-queue
+// TODO: Already enhanced-queue
+function enhanceImage( imageDataKey ) {
+    if ( enhancedKeys.indexOf(imageDataKey) > 0 ) {
+        console.log("Already enhanced");
+        return
+    }
+    var img = dataUrl + "1200/" + imageDataKey + ".jpg";
+    
+    textureLoader.load(img, enhanceImageCallback.bind(null, imageDataKey));
+}
+
+function enhanceImageCallback(imageDataKey, spriteMap) {
+    var selectedData = imageData[imageDataKey];
+
     var spriteMaterial = new THREE.SpriteMaterial( { map: spriteMap, color: 0xffffff } );
     var sprite = new THREE.Sprite( spriteMaterial );
 
@@ -983,10 +1023,10 @@ function onMouseup(event) {
     scene.add( sprite );
     if ( enhancedQueue.length >= maxEnhanced ) {
         scene.remove( enhancedQueue.shift() );
+        enhancedKeys.shift();
     }
     enhancedQueue.push( sprite );
-//    console.log("Mouse: " + mouse.x + ", " + mouse.y + ", added sprite " + JSON.stringify(sprite));
-
+    enhancedKeys.push(imageDataKey);
 }
 
 var enhanceProjector = new THREE.Projector();
@@ -995,6 +1035,19 @@ var enhanceProjector = new THREE.Projector();
 **/
 function enhance() {
     // %%%
+    selected = raycaster.intersectObjects( scene.children );
+    if (!selected.length) return;
+    // The 0th member is closest to the camera
+    selected = selected[0];
+    if ( !selected.object.userData.datum ) { // Skip already enhanced
+        return;
+    }
+    var imageIndex = selected.object.userData.datum.idx;
+//    console.log("imageKey=" + selected.object.name + ", faceIndex=" + faceIndex + ", meshIndex=" + meshIndex + ", imageIndex=" + imageIndex + ", selected=" + JSON.stringify(selected));
+    // Store the image name in the url hash for reference
+    var imageDataKey = imageDataKeys[imageIndex];
+    enhanceImage(imageDataKey);
+
 //    console.log("Enhance called");
 //    raycaster.setFromCamera(mouse, camera);
 //    var intersects = raycaster.intersectObjects( scene.children );
@@ -1091,7 +1144,6 @@ function addWindowEventListeners() {
 * Create the animation loop that re-renders the scene each frame
 **/
 
-var cameraState = 'moving'; // moving / still
 var lastCameraPosition = { };
 function animate() {
   requestAnimationFrame(animate);

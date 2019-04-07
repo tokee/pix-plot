@@ -2,8 +2,9 @@
 * Globals
 **/
 
-// TODO: Transparent PNGs as atlas
 // TODO: How to avoid rounding errors with offset? 1-pixel padding?
+//       Transparent PNGs as atlas?
+//       Or use canvas to create custom-size sprites?
 
 // Initialize global data stores for image data
 var imageData = {};
@@ -479,6 +480,46 @@ function startIfTexturesReady() {
     })
   }
 }
+// https://jsfiddle.net/h9sub275/6/
+function makeTextSprite(message, fontsize) {
+    var ctx, texture, sprite, spriteMaterial, 
+        canvas = document.createElement('canvas');
+    ctx = canvas.getContext('2d');
+    ctx.font = fontsize + "px Arial";
+    
+    // setting canvas width/height before ctx draw, else canvas is empty
+    //            canvas.width = ctx.measureText(message).width;
+    //            canvas.height = fontsize * 6; // fontsize * 1.5
+    canvas.width = 32;
+    canvas.height = 32;
+    
+    // after setting the canvas width/height we have to re-set font to apply!?! looks like ctx reset
+    ctx.font = fontsize + "px Arial";        
+    ctx.fillStyle = '#' + (Math.random()*0xFFFFFF<<0).toString(16);
+    ctx.fillRect(0, 0, 15, 31);
+    ctx.fillStyle = '#' + (Math.random()*0xFFFFFF<<0).toString(16);
+    ctx.fillText(message, 0, fontsize);
+    
+    texture = new THREE.Texture(canvas);
+    texture.minFilter = THREE.LinearFilter; // NearestFilter;
+    texture.needsUpdate = true;
+    
+    spriteMaterial = new THREE.SpriteMaterial({map : texture});
+    //spriteMaterial.blending = THREE.NoBlending;
+    spriteMaterial.transparent = false;
+    sprite = new THREE.Sprite(spriteMaterial);
+    return sprite;   
+}
+function makeSprite( imageID ) {
+    var canvas = document.createElement('canvas');
+    canvas.width = 32;
+    canvas.height = 32;
+    var ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#' + (Math.random()*0xFFFFFF<<0).toString(16);
+    ctx.fillRect(0, 0, 31, 31);
+    var texture = new THREE.Texture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+}
 
 /**
 * For each of the 32px textures, find the images in that
@@ -505,9 +546,9 @@ function buildGeometry() {
     //var geometry = new THREE.Geometry();
     var meshImages = imageDataKeys.slice(i*imagesPerMesh, (i+1)*imagesPerMesh);
     for (var j=0; j<meshImages.length; j++) {
-//        if ( spriteCount >= 10000 )  {
-//            break;
-//        }
+        if ( spriteCount >= 50000 )  {
+            break;
+        }
       var datum = imageData[ meshImages[j] ];
         
         // ###
@@ -527,11 +568,13 @@ function buildGeometry() {
 //        console.log("column=" + column + ", row=" + row + ", tileSide=" + tileSide + ", offset.x=" + spriteMap.offset.x + ", offset.y=" + spriteMap.offset.y + ", repeat=" + (1/tileSide));
         
         //spriteMap = new THREE.TextureLoader().load( imageFile );
-//        var spriteMaterial = new THREE.SpriteMaterial( { map: baseSpriteMap, color: 0xffffff } );
-        var spriteMaterial = new THREE.SpriteMaterial( { map: spriteMap, color: 0xffffff } );
-        var sprite = new THREE.Sprite( spriteMaterial );
 
-        sprite.name = imageKey;
+        var spriteMaterial = new THREE.SpriteMaterial( { map: spriteMap } );
+        spriteMaterial.transparent = false;
+        var sprite = new THREE.Sprite( spriteMaterial );
+        //var sprite = makeTextSprite( "i" + i + "j" + j, 12 );
+
+        sprite.userData.datum = datum;
         sprite.scale.set(32*4, 32*4, 1)
 //        sprite.scale.set(datum.width*4, datum.height*4, 1)
         sprite.position.x = datum.pos.x;
@@ -886,22 +929,32 @@ function onMousedown(event) {
 * @param {Event} event - triggered on canvas mouseup
 **/
 
+var enhancedQueue = [];
+var maxEnhanced = 2;
 function onMouseup(event) {
+  // Ensure everything's updated as we no longer busy-rendre
+  raycaster.setFromCamera(mouse, camera);
+
   // Determine which image is selected (if any)
   selected = raycaster.intersectObjects( scene.children );
   // Return if the user hasn't clicked anything or is dragging
   if (!selected.length || !(mouse.equals(lastMouse))) return;
-  // The 0th member is closest to the camera
+    // The 0th member is closest to the camera
   selected = selected[0];
+
+//    console.log("Selected=" + JSON.stringify(selected.object.userData));
   // Identify the selected item's face within its parent mesh
-  var faceIndex = selected.faceIndex;
+//  var faceIndex = selected.faceIndex;
   // Identify the selected item's mesh index
-  var meshIndex = selected.object.userData.meshIndex;
+//  var meshIndex = selected.object.userData.meshIndex;
   // rows * cols images per mesh, 2 faces per image
-  var imageIndex = (meshIndex * imagesPerMesh) + Math.floor(faceIndex / 2);
+    //  var imageIndex = (meshIndex * imagesPerMesh) + Math.floor(faceIndex / 2);
+
+    var imageIndex = selected.object.userData.datum.idx;
 //    console.log("imageKey=" + selected.object.name + ", faceIndex=" + faceIndex + ", meshIndex=" + meshIndex + ", imageIndex=" + imageIndex + ", selected=" + JSON.stringify(selected));
   // Store the image name in the url hash for reference
-  window.location.hash = imageDataKeys[imageIndex];
+    var imageDataKey = imageDataKeys[imageIndex];
+  window.location.hash = imageDataKey;
   flyTo(
     selected.point.x,
     selected.point.y,
@@ -912,12 +965,11 @@ function onMouseup(event) {
 //    console.log("Mouse: " + mouse.x + ", " + mouse.y + ", selected=" + JSON.stringify(selected));
     // TODO: Remove experiments
     // https://threejs.org/docs/#api/en/objects/Sprite
-    var imageDataKey = selected.object.name;
 //    console.log("Extracting index " + imageIndex + " from imageDataKeys " + JSON.stringify(imageDataKeys));
     var img = dataUrl + "1200/" + imageDataKey + ".jpg";
     var selectedData = imageData[imageDataKey];
 //    console.log(JSON.stringify(selectedData));
-    console.log(JSON.stringify(selected));
+//    console.log(JSON.stringify(selected));
     
     var spriteMap = new THREE.TextureLoader().load( img );
 //    var spriteMap = new THREE.TextureLoader().load( dataUrl + "full/" + "selected.Toke.jpg" );
@@ -929,9 +981,15 @@ function onMouseup(event) {
     sprite.position.y = selectedData.pos.y;
     sprite.position.z = selectedData.pos.z + 1;
     scene.add( sprite );
+    if ( enhancedQueue.length >= maxEnhanced ) {
+        console.log("Removing");
+        scene.remove( enhancedQueue.shift() );
+    }
+    enhancedQueue.push( sprite );
 //    console.log("Mouse: " + mouse.x + ", " + mouse.y + ", added sprite " + JSON.stringify(sprite));
 
 }
+
 
 /**
 * Fly to a spot and focus the camera on that spot

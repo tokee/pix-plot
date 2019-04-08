@@ -549,9 +549,9 @@ function buildGeometry() {
     //var geometry = new THREE.Geometry();
     var meshImages = imageDataKeys.slice(i*imagesPerMesh, (i+1)*imagesPerMesh);
     for (var j=0; j<meshImages.length; j++) {
-        if ( spriteCount >= 50000 )  {
-            break;
-        }
+//        if ( spriteCount >= 50000 )  {
+//            break;
+//        }
       var datum = imageData[ meshImages[j] ];
         
         // ###

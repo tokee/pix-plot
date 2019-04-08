@@ -139,7 +139,8 @@ function getControls(camera, renderer) {
   var controls = new THREE.TrackballControls(camera, renderer.domElement);
   controls.zoomSpeed = 0.9;
   controls.panSpeed = 0.6;
-  controls.dynamicDampingFactor = 0.9;
+  //controls.dynamicDampingFactor = 0.9;
+  controls.staticMoving = true;  
   // https://github.com/mrdoob/three.js/blob/master/examples/js/controls/TrackballControls.js  
   controls.addEventListener('change', viewChanged, false);
   
@@ -551,7 +552,7 @@ function buildGeometry() {
     //var geometry = new THREE.Geometry();
     var meshImages = imageDataKeys.slice(i*imagesPerMesh, (i+1)*imagesPerMesh);
     for (var j=0; j<meshImages.length; j++) {
-        if ( spriteCount >= 50000 )  {
+        if ( spriteCount >= 30000 )  {
             break;
         }
       var datum = imageData[ meshImages[j] ];
@@ -587,6 +588,98 @@ function buildGeometry() {
         sprite.position.x = datum.pos.x;
         sprite.position.y = datum.pos.y;
         sprite.position.z = datum.pos.z;
+        scene.add( sprite );
+        spriteCount++;
+        //console.log("Added sprite #" + spriteCount + ": " + imageKey);
+        //console.log(JSON.stringify(datum));
+//        console.log(JSON.stringify(imageDataKeys[datum.idx]));
+        
+//      geometry = updateVertices(geometry, datum);
+//      geometry = updateFaces(geometry);
+//      geometry = updateFaceVertexUvs(geometry, datum);
+    }
+//    var startMaterial = imageData[ meshImages[0] ].atlas.index;
+//    var endMaterial = imageData[ meshImages[j-1] ].atlas.index;
+//    buildMesh(geometry, materials['32'].slice(startMaterial, endMaterial + 1));
+  }
+    requestAnimationFrame(animate);
+    removeLoaderScene();
+//  loadLargeAtlasFiles();
+}
+
+function buildGeometryPointsFailed() {
+  var spriteCount = 0;
+  var tileSide = Math.floor(2048/32);
+  var meshCount = Math.ceil( imageDataKeys.length / imagesPerMesh );
+  for (var i=0; i<meshCount; i++) {
+    // https://www.script-tutorials.com/webgl-with-three-js-lesson-8/
+    var baseSpriteMap = textures[i];
+      //new THREE.TextureLoader().load( dataUrl + "atlas_files/32px/atlas-" + i + "-rainbow.png" );
+//    var baseSpriteMap = new THREE.TextureLoader().load( dataUrl + "atlas_files/32px/atlas-" + i + ".jpg" );
+    baseSpriteMap.wrapS = baseSpriteMap.wrapT = THREE.RepeatWrapping
+//    baseSpriteMap.repeat.set(1 / tileSide, 1 / tileSide);  
+    baseSpriteMap.repeat.set(1 / tileSide, 1 / tileSide);  
+
+    //var geometry = new THREE.Geometry();
+      var meshImages = imageDataKeys.slice(i*imagesPerMesh, (i+1)*imagesPerMesh);
+
+
+      for (var j=0; j<meshImages.length; j++) {
+          
+          if ( spriteCount >= 50000 )  {
+              break;
+          }
+          
+          var datum = imageData[ meshImages[j] ];
+
+          var geometry = new THREE.Geometry();
+          const position = new THREE.Vector3();
+          position.x = datum.pos.x;
+          position.y = datum.pos.y;
+          position.z = datum.pos.z;
+          geometry.vertices.push(position);
+
+          
+        
+        // ###
+        //        var spriteMap = new THREE.TextureLoader().load( dataUrl + "thumbs/Toke.jpg" );
+        var imageKey = imageDataKeys[datum.idx].replace('"', '');
+        var imageFile = dataUrl + "thumbs/128px/" + imageKey + ".jpg";
+//        var spriteMap = new THREE.TextureLoader().load( imageFile );
+
+        var column = j % tileSide;
+        var row = Math.floor(j / tileSide);
+        var spriteMap = baseSpriteMap.clone(); // Shallow clone so the texture bitmap is shared
+        spriteMap.offset.x = column / tileSide;
+        spriteMap.offset.y = 1-((row+1)/tileSide) ; // row / tileSide);
+        spriteMap.needsUpdate = true;
+        spriteMap.uuid = baseSpriteMap.uuid; // Needed to avoid texture duplication
+        //console.log(JSON.stringify(spriteMap));
+//        console.log("column=" + column + ", row=" + row + ", tileSide=" + tileSide + ", offset.x=" + spriteMap.offset.x + ", offset.y=" + spriteMap.offset.y + ", repeat=" + (1/tileSide));
+        
+        //spriteMap = new THREE.TextureLoader().load( imageFile );
+
+          //var spriteMaterial = new THREE.SpriteMaterial( { map: spriteMap } );
+          //spriteMaterial.blending = THREE.NoBlending;
+          //spriteMaterial.transparent = false;
+
+          var spriteMaterial = new THREE.PointsMaterial({
+              size: 32,
+              map: spriteMap,
+              transparent: false
+          });
+          
+        // spriteMaterial.depthTest = false; // No difference
+          var sprite = new THREE.Points( geometry, spriteMaterial );
+          //var sprite = new THREE.PointsSprite( spriteMaterial );
+        //var sprite = makeTextSprite( "i" + i + "j" + j, 12 );
+
+        sprite.userData.datum = datum;
+//        sprite.scale.set(32, 32, 1)
+//        sprite.scale.set(datum.width*4, datum.height*4, 1)
+//        sprite.position.x = datum.pos.x;
+//        sprite.position.y = datum.pos.y;
+//        sprite.position.z = datum.pos.z;
         scene.add( sprite );
         spriteCount++;
         //console.log("Added sprite #" + spriteCount + ": " + imageKey);

@@ -913,9 +913,9 @@ function addCanvasEventListeners() {
 function onMousemove(event) {
     mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
     mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
-    if ( cameraState == 'still' ) {
-        enhance;
-    }
+//    if ( cameraState == 'still' ) {
+//        enhance;
+//    }
 }
 
 /**
@@ -935,9 +935,6 @@ function onMousedown(event) {
 * @param {Event} event - triggered on canvas mouseup
 **/
 
-var enhancedKeys = [];
-var enhancedQueue = [];
-var maxEnhanced = 2;
 function onMouseup(event) {
   // Ensure everything's updated as we no longer busy-render
   raycaster.setFromCamera(mouse, camera);
@@ -974,7 +971,6 @@ function onMouseup(event) {
 }
 
 function oldenhanceImage( imageDataKey ) {
-    // %%%
     var img = dataUrl + "1200/" + imageDataKey + ".jpg";
     //    console.log(JSON.stringify(selectedData));
 //    console.log(JSON.stringify(selected));
@@ -998,21 +994,51 @@ function oldenhanceImage( imageDataKey ) {
     enhancedQueue.push( sprite );
 }
 
+var maxLoadingEnhanced = 4;
+var maxDisplayedEnhanced = 10;
+
+var enhancedLoading = [];
+var enhancedDisplayedKeys = [];
+var enhancedDisplayedSprites = [];
+
 // TODO: Pending-queue
 // TODO: Already enhanced-queue
 function enhanceImage( imageDataKey ) {
-    if ( enhancedKeys.indexOf(imageDataKey) > 0 ) {
-        console.log("Already enhanced");
+    console.log("EnhanceImage(" + imageDataKey + ") called");
+    if ( enhancedLoading.indexOf(imageDataKey) >= 0 || enhancedDisplayedKeys.indexOf(imageDataKey) >= 0 ) {
+        console.log("Already got " + JSON.stringify(imageDataKey));
+        return;
+    }
+    if (enhancedLoading.length >= maxLoadingEnhanced) {
+        console.log("Load-queue already full at " + enhancedLoading.length + " elements. skipping image " + imageDataKey);
         return
     }
+
+    // TODO: Clicking an image that has been de-enhanced does not work due to a problem with texture-loader cache
+    enhancedLoading.push(imageDataKey);
     var img = dataUrl + "1200/" + imageDataKey + ".jpg";
-    
-    textureLoader.load(img, enhanceImageCallback.bind(null, imageDataKey));
+    textureLoader.load(img, enhanceImageCallback.bind(null, imageDataKey), undefined, function(err) {
+        console.error("Error loading image " + imageDataKey + ": " + err);
+        removeElement( enhancedLoading, imageDataKey);
+    });
+    //setTimeout(function() { removeElement( enhancedLoading, imagedataKey); }, 5000); // Hack to solve texture-loader cache problem
 }
 
+function removeElement( anArray, element ) {
+    for (var i = 0 ; i < anArray.length ; i++) {
+        if ( anArray[i] == element ) {
+            console.log("Removing " + element + " from array");
+            anArray.splice(i, 1);
+            return;
+        }
+    }
+}
+    
 function enhanceImageCallback(imageDataKey, spriteMap) {
+    console.log("Callback with " + imageDataKey);
+    removeElement(enhancedLoading, imageDataKey);
+    
     var selectedData = imageData[imageDataKey];
-
     var spriteMaterial = new THREE.SpriteMaterial( { map: spriteMap, color: 0xffffff } );
     var sprite = new THREE.Sprite( spriteMaterial );
 
@@ -1021,12 +1047,13 @@ function enhanceImageCallback(imageDataKey, spriteMap) {
     sprite.position.y = selectedData.pos.y;
     sprite.position.z = selectedData.pos.z + 1;
     scene.add( sprite );
-    if ( enhancedQueue.length >= maxEnhanced ) {
-        scene.remove( enhancedQueue.shift() );
-        enhancedKeys.shift();
+    if ( enhancedDisplayedSprites.length >= maxDisplayedEnhanced ) {
+        scene.remove( enhancedDisplayedSprites.shift() );
+        enhancedDisplayedKeys.shift();
+        console.log("Dequeued with remaining: " + JSON.stringify(enhancedDisplayedKeys));
     }
-    enhancedQueue.push( sprite );
-    enhancedKeys.push(imageDataKey);
+    enhancedDisplayedSprites.push(sprite);
+    enhancedDisplayedKeys.push(imageDataKey);
 }
 
 var enhanceProjector = new THREE.Projector();

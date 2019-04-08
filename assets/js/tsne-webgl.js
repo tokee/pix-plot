@@ -135,9 +135,11 @@ function getRenderer() {
 **/
 
 function getControls(camera, renderer) {
+  //var controls = new THREE.OrbitControls(camera, renderer.domElement);
   var controls = new THREE.TrackballControls(camera, renderer.domElement);
-  controls.zoomSpeed = 0.6;
+  controls.zoomSpeed = 0.9;
   controls.panSpeed = 0.6;
+  controls.dynamicDampingFactor = 0.9;
   // https://github.com/mrdoob/three.js/blob/master/examples/js/controls/TrackballControls.js  
   controls.addEventListener('change', viewChanged, false);
   
@@ -508,7 +510,7 @@ function makeTextSprite(message, fontsize) {
     texture.needsUpdate = true;
     
     spriteMaterial = new THREE.SpriteMaterial({map : texture});
-    //spriteMaterial.blending = THREE.NoBlending;
+    spriteMaterial.blending = THREE.NoBlending;
     spriteMaterial.transparent = false;
     sprite = new THREE.Sprite(spriteMaterial);
     return sprite;   
@@ -549,9 +551,9 @@ function buildGeometry() {
     //var geometry = new THREE.Geometry();
     var meshImages = imageDataKeys.slice(i*imagesPerMesh, (i+1)*imagesPerMesh);
     for (var j=0; j<meshImages.length; j++) {
-//        if ( spriteCount >= 50000 )  {
-//            break;
-//        }
+        if ( spriteCount >= 50000 )  {
+            break;
+        }
       var datum = imageData[ meshImages[j] ];
         
         // ###
@@ -573,12 +575,14 @@ function buildGeometry() {
         //spriteMap = new THREE.TextureLoader().load( imageFile );
 
         var spriteMaterial = new THREE.SpriteMaterial( { map: spriteMap } );
+        spriteMaterial.blending = THREE.NoBlending;
         spriteMaterial.transparent = false;
+        // spriteMaterial.depthTest = false; // No difference
         var sprite = new THREE.Sprite( spriteMaterial );
         //var sprite = makeTextSprite( "i" + i + "j" + j, 12 );
 
         sprite.userData.datum = datum;
-        sprite.scale.set(32*4, 32*4, 1)
+        sprite.scale.set(32, 32, 1)
 //        sprite.scale.set(datum.width*4, datum.height*4, 1)
         sprite.position.x = datum.pos.x;
         sprite.position.y = datum.pos.y;
@@ -1082,7 +1086,6 @@ function enhance() {
 //        console.log("Got " + JSON.stringify(intersects[ i ].object));
 //    }
 }
-
 
 /**
 * Fly to a spot and focus the camera on that spot

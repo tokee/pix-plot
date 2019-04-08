@@ -1004,13 +1004,13 @@ var enhancedDisplayedSprites = [];
 // TODO: Pending-queue
 // TODO: Already enhanced-queue
 function enhanceImage( imageDataKey ) {
-    console.log("EnhanceImage(" + imageDataKey + ") called");
+//    console.log("EnhanceImage(" + imageDataKey + ") called");
     if ( enhancedLoading.indexOf(imageDataKey) >= 0 || enhancedDisplayedKeys.indexOf(imageDataKey) >= 0 ) {
-        console.log("Already got " + JSON.stringify(imageDataKey));
+//        console.log("Already got " + JSON.stringify(imageDataKey));
         return;
     }
     if (enhancedLoading.length >= maxLoadingEnhanced) {
-        console.log("Load-queue already full at " + enhancedLoading.length + " elements. skipping image " + imageDataKey);
+//        console.log("Load-queue already full at " + enhancedLoading.length + " elements. skipping image " + imageDataKey);
         return
     }
 
@@ -1027,7 +1027,7 @@ function enhanceImage( imageDataKey ) {
 function removeElement( anArray, element ) {
     for (var i = 0 ; i < anArray.length ; i++) {
         if ( anArray[i] == element ) {
-            console.log("Removing " + element + " from array");
+//            console.log("Removing " + element + " from array");
             anArray.splice(i, 1);
             return;
         }
